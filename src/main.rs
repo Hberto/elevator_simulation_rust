@@ -307,38 +307,59 @@ impl Passagier {
     }
 }
 
-fn main() {
-    let kb1 = Fahrkabine::new(0, 0);
-    let kb2 = Fahrkabine::new(1, 0);
-    let kb3 = Fahrkabine::new(2, 0);
+fn run_simulation(num_elevators: usize, num_floors: i32, num_passengers: usize) {
+    // create elevators
+    let mut fahrkabinen = Vec::new();
+    for i in 0..num_elevators {
+        fahrkabinen.push(Fahrkabine::new(i as i32, 0));
+    }
 
-    let fahrkabinen = vec![Arc::clone(&kb1), Arc::clone(&kb2), Arc::clone(&kb3)];
+    // create floors
+    let mut etagen = Vec::new();
+    for i in 0..num_floors {
+        etagen.push(Etage { id: i });
+    }
+
+    // create controller
     let controller = Arc::new(RwLock::new(Controller::new(
-        fahrkabinen,
-        vec![Etage { id: 0 }, Etage { id: 1 }, Etage { id: 2 }],
+        fahrkabinen.clone(),
+        etagen,
     )));
 
     println!("Main loop");
-    for i in 0..8 {
-        let random_floor = rand::random::<i32>() % 3;
-        let random_floor_2 = rand::random::<i32>() % 3;
-        //TODO more inteligent random floor selection (dont select current floor as destination)
+    for i in 0..num_passengers {
+        let random_floor = rand::random::<i32>().abs() % num_floors;
+        let mut random_floor_2 = rand::random::<i32>().abs() % num_floors;
+        while random_floor_2 == random_floor {
+            random_floor_2 = rand::random::<i32>().abs() % num_floors;
+        }
+
         let p = Passagier::new(
-            i,
+            i as i32,
             random_floor,
             random_floor_2,
-            vec![kb1.clone(), kb2.clone(), kb3.clone()],
+            fahrkabinen.clone(),
             controller.clone(),
         );
         controller.write().unwrap().all_passengers.push(p);
     }
     println!("Created all Passengers!");
-    while controller.read().unwrap().all_passengers.iter().any(|p| { //TODO this might occur when a passenger has exited because of full elevator, even if he is not in his desired floor
+    while controller.read().unwrap().all_passengers.iter().any(|p| {
         let p = p.read().unwrap();
         p.state != PassengerState::Exiting
     }) {}
     println!("All passengers have exited");
-    for fahrkabine in vec![Arc::clone(&kb1), Arc::clone(&kb2), Arc::clone(&kb3)] {
+    for fahrkabine in fahrkabinen {
         println!("{:?}", fahrkabine);
     }
+}
+
+fn main() {
+    // Define constants for the simulation
+    const NUM_ELEVATORS: usize = 3;
+    const NUM_FLOORS: i32 = 3;
+    const NUM_PASSENGERS: usize = 8;
+
+    // Run the simulation with the defined constants
+    run_simulation(NUM_ELEVATORS, NUM_FLOORS, NUM_PASSENGERS);
 }
