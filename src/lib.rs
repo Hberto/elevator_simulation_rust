@@ -1,17 +1,18 @@
+use std::ops::Deref;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum DoorState {
     Open,
     Opening,
     Closing,
     Closed,
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum PassengerState {
     WaitingOnFloor(i32),
     EnteringElevator,
@@ -73,6 +74,11 @@ impl Fahrkabine {
         }))
     }
 
+    fn get_state(kabine: &Arc<RwLock<Fahrkabine>>) -> (i32, i32, DoorState, Vec<i32>) {
+        let kabine = kabine.read().unwrap();
+        (kabine.id, kabine.etage, kabine.door.state.clone(), kabine.passengers.clone())
+    }
+
     fn press_level_button(&self, etage: i32) {
         self.level_sender.as_ref().unwrap().send(etage);
     }
@@ -121,6 +127,20 @@ impl Controller {
         );
     }
 
+    /* fn get_fahrkabinen_states(&self) -> Vec<(i32, i32, DoorState, Vec<i32>)> {
+        self.fahrkabinen.iter().map(|kabine| {
+            let kabine = kabine.read().umwrap();
+            (kabine.id, kabine.etage, kabine.door.state.clone(), kabine.passengers.clone())
+        }).collect()
+    } */
+
+    // Method to get the states of all Passagiere
+    fn get_passenger_states(&self) -> Vec<(i32, PassengerState)> {
+        self.all_passengers.iter().map(|p| {
+            let passagier = p.read().unwrap();
+            (passagier.id, passagier.state.clone())
+        }).collect()
+    }
     fn move_to(kabine: &Arc<RwLock<Fahrkabine>>, etage: i32) {
         let mut kabine = kabine.write().unwrap();
         println!("Fahrkabine {} moving to etage {}", kabine.id, etage);
@@ -208,6 +228,11 @@ impl Passagier {
         let f = l.clone();
         thread::spawn(move || Passagier::lifecycle(l, fahrkabinen, controller));
         f
+    }
+
+    fn get_state(passagier: &Arc<RwLock<Passagier>>) -> (i32, i32, i32, PassengerState) {
+        let passagier = passagier.read().unwrap();
+        (passagier.id, passagier.etage, passagier.dest_etage, passagier.state.clone())
     }
 
     fn lifecycle(passagier: Arc<RwLock<Passagier>>, fahrkabinen: Vec<Arc<RwLock<Fahrkabine>>>, controller: Arc<RwLock<Controller>>) {
