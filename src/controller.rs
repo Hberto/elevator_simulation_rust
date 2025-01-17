@@ -2,7 +2,10 @@ use std::sync::{Arc, RwLock};
 use std::sync::mpsc::channel;
 use std::thread;
 use crate::cabin::{DoorState, Etage, Fahrkabine};
+use crate::logger::Logger;
 use crate::passenger::{Passagier, PassengerState};
+
+static LOGGER: Logger = Logger{};
 
 pub struct Controller {
     fahrkabinen: Vec<Arc<std::sync::mpsc::Sender<i32>>>, //TODO sender either in controller or in kabine not in both
@@ -48,14 +51,15 @@ impl Controller {
     }
     fn move_to(kabine: &Arc<RwLock<Fahrkabine>>, etage: i32) {
         let mut kabine = kabine.write().unwrap();
-        println!("Fahrkabine {} moving to etage {}", kabine.id, etage);
+        LOGGER.log(format!("Fahrkabine {} moving to etage {}", kabine.id, etage));
         thread::sleep(std::time::Duration::from_secs(1));
         kabine.etage = etage;
     }
 
     fn open_door(kabine_lock: &Arc<RwLock<Fahrkabine>>) {
         let mut kabine = kabine_lock.write().unwrap();
-        println!("Fahrkabine {} opening door", kabine.id);
+        LOGGER.log(format!("Fahrkabine {} opened door", kabine.id));
+
         kabine.door.state = DoorState::Opening;
         drop(kabine);
         thread::sleep(std::time::Duration::from_millis(100));
@@ -65,7 +69,7 @@ impl Controller {
 
     fn close_door(kabine_lock: &Arc<RwLock<Fahrkabine>>) {
         let mut kabine = kabine_lock.write().unwrap();
-        println!("Fahrkabine {} closing door", kabine.id);
+        LOGGER.log(format!("Fahrkabine {} closing door", kabine.id));
         kabine.door.state = DoorState::Closing;
         drop(kabine);
         thread::sleep(std::time::Duration::from_millis(100));
@@ -75,7 +79,7 @@ impl Controller {
 
     fn await_passengers(kabine_lock: &Arc<RwLock<Fahrkabine>>) {
         let kabine = kabine_lock.read().unwrap();
-        println!("Fahrkabine {} waiting for passengers", kabine.id);
+        LOGGER.log(format!("Fahrkabine {} waiting for passengers", kabine.id));
         drop(kabine);
         thread::sleep(std::time::Duration::from_micros(100));
         loop {
@@ -88,7 +92,8 @@ impl Controller {
     }
 
     pub(crate) fn send_floor_request(&self, etage: i32, direction: i32) {
-        println!("Controller is sending request to Fahrkabine");
+        println!();
+        LOGGER.log(format!("Controller is sending request to Fahrkabine"));
         //TODO inteligent selection of kabine
         let random_kabine = 1;
         self.fahrkabinen[random_kabine as usize].send(etage);
