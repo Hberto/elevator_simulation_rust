@@ -1,0 +1,5 @@
+[package]
+name = "elevator" # the name of the package
+version = "0.1.0"    # the current version, obeying semver
+edition = "2021"
+# authors = ["Alice <a@example.com>", "Bob <b@example.com>"]
