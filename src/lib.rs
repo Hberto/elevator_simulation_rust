@@ -74,7 +74,7 @@ impl Fahrkabine {
         }))
     }
 
-    fn get_state(kabine: &Arc<RwLock<Fahrkabine>>) -> (i32, i32, DoorState, Vec<i32>) {
+    pub  fn get_state(kabine: &Arc<RwLock<Fahrkabine>>) -> (i32, i32, DoorState, Vec<i32>) {
         let kabine = kabine.read().unwrap();
         (kabine.id, kabine.etage, kabine.door.state.clone(), kabine.passengers.clone())
     }
@@ -135,7 +135,7 @@ impl Controller {
     } */
 
     // Method to get the states of all Passagiere
-    fn get_passenger_states(&self) -> Vec<(i32, PassengerState)> {
+    pub fn get_passenger_states(&self) -> Vec<(i32, PassengerState)> {
         self.all_passengers.iter().map(|p| {
             let passagier = p.read().unwrap();
             (passagier.id, passagier.state.clone())
@@ -230,7 +230,7 @@ impl Passagier {
         f
     }
 
-    fn get_state(passagier: &Arc<RwLock<Passagier>>) -> (i32, i32, i32, PassengerState) {
+    pub fn get_state(passagier: &Arc<RwLock<Passagier>>) -> (i32, i32, i32, PassengerState) {
         let passagier = passagier.read().unwrap();
         (passagier.id, passagier.etage, passagier.dest_etage, passagier.state.clone())
     }
