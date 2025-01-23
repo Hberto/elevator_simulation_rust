@@ -60,6 +60,8 @@ pub fn run_simulation(
 
     // ensure the lengths match
     assert_eq!(current_floors.len(), destination_floors.len(), "Current and destination floors must have the same length.");
+    assert_eq!(current_floors.len() as i32, num_floors, "Current floors must match number of floors.");
+    assert_eq!(destination_floors.len() as i32, num_floors, "Destination floors must match number of floors.");
 
     // assert that all current and destination floors are within valid bounds
     for &floor in &current_floors {
