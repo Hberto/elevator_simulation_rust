@@ -58,8 +58,17 @@ pub fn run_simulation(
         floors
     });
 
-    // Ensure the lengths match
+    // ensure the lengths match
     assert_eq!(current_floors.len(), destination_floors.len(), "Current and destination floors must have the same length.");
+
+    // assert that all current and destination floors are within valid bounds
+    for &floor in &current_floors {
+        assert!(floor >= 0 && floor < num_floors, "Current floor {} is out of bounds.", floor);
+    }
+
+    for &floor in &destination_floors {
+        assert!(floor >= 0 && floor < num_floors, "Destination floor {} is out of bounds.", floor);
+    }
 
     for (i, (&current_floor, &destination_floor)) in current_floors.iter().zip(destination_floors.iter()).enumerate() {
         let p = Passagier::new(
