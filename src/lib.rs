@@ -92,6 +92,7 @@ pub fn run_simulation(
     debug_passenger_states(&controller);
 
     // Wait for all passengers to exit
+    // TODO: some way to distinctly go through the states step by step would be awesome to test the different states, right now its kinda doing its own thing
     while controller.read().unwrap().all_passengers.iter().any(|p| {
         let p = p.read().unwrap();
         p.state != PassengerState::Exiting
