@@ -7,7 +7,7 @@ use log::{info, warn};
 
 // use elevator::*;
 mod cabin;
-mod passenger;
+pub mod passenger;
 mod controller;
 
 pub fn init_simulation(
