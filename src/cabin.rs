@@ -36,7 +36,7 @@ impl Door {
 }
 
 impl Fahrkabine {
-    pub fn new(id: i32, etage: i32) -> Arc<RwLock<Fahrkabine>> {
+    pub fn new(id: i32, etage: i32, max_passengers_per_cabin: usize) -> Arc<RwLock<Fahrkabine>> {
         Arc::new(RwLock::new(Fahrkabine {
             id: id,
             etage: etage,
@@ -44,7 +44,7 @@ impl Fahrkabine {
                 state: DoorState::Closed,
             },
             passengers: vec![],
-            max_passengers: 2,
+            max_passengers: max_passengers_per_cabin,
             level_sender: None,
         }))
     }
