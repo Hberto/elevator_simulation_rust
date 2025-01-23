@@ -85,6 +85,8 @@ pub fn run_simulation(
     }
 
     info!("Created all Passengers!");
+    info!("State before");
+    debug_passenger_states(&controller);
 
     // Wait for all passengers to exit
     while controller.read().unwrap().all_passengers.iter().any(|p| {
@@ -92,10 +94,21 @@ pub fn run_simulation(
         p.state != PassengerState::Exiting
     }) {}
 
+
     info!("All passengers have exited");
 
     for fahrkabine in fahrkabinen {
         println!("{:?}", fahrkabine);
     }
+    info!("State after");
+    debug_passenger_states(&controller);
+}
+
+fn debug_passenger_states(controller: &Arc<RwLock<Controller>>) {
+    controller.read().unwrap().all_passengers.iter().map(|p| {
+        Passagier::get_state(p)
+    }).for_each(|p| {
+        info!("P{:?}: {:?}->{:?} ({:?})", p.0, p.1, p.2, p.3);
+    });
 }
 
