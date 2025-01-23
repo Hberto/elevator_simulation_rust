@@ -10,14 +10,14 @@ mod cabin;
 mod passenger;
 mod controller;
 
-pub fn run_simulation(
+pub fn init_simulation(
     num_elevators: usize,
     num_floors: i32,
     num_passengers: usize,
     max_passengers_per_cabin: usize,
     current_floors: Option<Vec<i32>>,
     destination_floors: Option<Vec<i32>>,
-) {
+) -> Arc<RwLock<Controller>> {
     // Create elevators
     let mut fahrkabinen = Vec::new();
     for i in 0..num_elevators {
@@ -88,18 +88,19 @@ pub fn run_simulation(
     info!("State before");
     debug_passenger_states(&controller);
 
+    controller
+}
+
+pub fn run_simulation(
+    controller: Arc<RwLock<Controller>>,
+) {
     // Wait for all passengers to exit
     while controller.read().unwrap().all_passengers.iter().any(|p| {
         let p = p.read().unwrap();
         p.state != PassengerState::Exiting
     }) {}
 
-
     info!("All passengers have exited");
-
-    for fahrkabine in fahrkabinen {
-        println!("{:?}", fahrkabine);
-    }
     info!("State after");
     debug_passenger_states(&controller);
 }
