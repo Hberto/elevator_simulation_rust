@@ -14,13 +14,14 @@ pub fn run_simulation(
     num_elevators: usize,
     num_floors: i32,
     num_passengers: usize,
+    max_passengers_per_cabin: usize,
     current_floors: Option<Vec<i32>>,
     destination_floors: Option<Vec<i32>>,
 ) {
     // Create elevators
     let mut fahrkabinen = Vec::new();
     for i in 0..num_elevators {
-        fahrkabinen.push(Fahrkabine::new(i as i32, 0));
+        fahrkabinen.push(Fahrkabine::new(i as i32, 0, max_passengers_per_cabin));
     }
 
     // Create floors
