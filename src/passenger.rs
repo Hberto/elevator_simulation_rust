@@ -3,6 +3,7 @@ use std::thread;
 use std::time::Duration;
 use crate::cabin::Fahrkabine;
 use crate::controller::Controller;
+use log::info;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum PassengerState {
@@ -57,15 +58,15 @@ impl Passagier {
                 if arrived_elevator.read().unwrap().passengers.len()
                     > arrived_elevator.read().unwrap().max_passengers
                 {
-                    println!("Elevator is full");
+                    info!("Elevator is full");
                     if rand::random::<i32>().abs() % 10 == 0 {
-                        println!("Passenger {} will Exit and wait for the next!", passagier.read().unwrap().id);
+                        info!("Passenger {} will Exit and wait for the next!", passagier.read().unwrap().id);
                         Passagier::exit_elevator(&passagier, &arrived_elevator);
                         thread::sleep(Duration::from_secs(5)); //TODO if we dont wait this will end in a deadlock
                         continue 'outer_loop;
                     }
                     else{
-                        println!("Passenger {} will hope for another passenger to leave!", passagier.read().unwrap().id);
+                        info!("Passenger {} will hope for another passenger to leave!", passagier.read().unwrap().id);
                         thread::sleep(Duration::from_micros(rand::random::<u64>() % 200));
 
                     }
@@ -84,13 +85,13 @@ impl Passagier {
     fn press_up_or_down_button(passagier: &Arc<RwLock<Passagier>>, controller: &Arc<RwLock<Controller>>) {
         let mut passagier = passagier.write().unwrap();
         passagier.state = PassengerState::WaitingOnFloor(passagier.etage);
-        println!("Passenger {} is pressing up or down button", passagier.id);
+        info!("Passenger {} is pressing up or down button", passagier.id);
         controller.read().unwrap().send_floor_request(passagier.etage, 1);
     }
     fn press_level_button(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
         let mut passagier = passagier.write().unwrap();
         passagier.state = PassengerState::ChoosingLevel;
-        println!("Passenger {} is pressing level button", passagier.id);
+        info!("Passenger {} is pressing level button", passagier.id);
 
         kabine
             .read()
@@ -104,7 +105,7 @@ impl Passagier {
         //TODO switch to changevar
         let passagier = passagier.write().unwrap();
 
-        println!(
+        info!(
             "Passenger {} is waiting for elevator in floor {}",
             passagier.id, passagier.etage
         );

@@ -3,6 +3,7 @@ use std::sync::RwLock;
 use crate::cabin::{Etage, Fahrkabine};
 use crate::controller::Controller;
 use crate::passenger::{Passagier, PassengerState};
+use log::info;
 
 // use elevator::*;
 mod cabin;
@@ -28,7 +29,7 @@ pub  fn run_simulation(num_elevators: usize, num_floors: i32, num_passengers: us
         etagen,
     )));
 
-    println!("Main loop");
+    info!("Main loop");
     for i in 0..num_passengers {
         let random_floor = rand::random::<i32>().abs() % num_floors;
         let mut random_floor_2 = rand::random::<i32>().abs() % num_floors;
@@ -45,12 +46,12 @@ pub  fn run_simulation(num_elevators: usize, num_floors: i32, num_passengers: us
         );
         controller.write().unwrap().all_passengers.push(p);
     }
-    println!("Created all Passengers!");
+    info!("Created all Passengers!");
     while controller.read().unwrap().all_passengers.iter().any(|p| {
         let p = p.read().unwrap();
         p.state != PassengerState::Exiting
     }) {}
-    println!("All passengers have exited");
+    info!("All passengers have exited");
     for fahrkabine in fahrkabinen {
         println!("{:?}", fahrkabine);
     }

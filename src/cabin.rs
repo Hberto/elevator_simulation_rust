@@ -1,5 +1,5 @@
 use std::sync::{Arc, RwLock};
-
+use log::info;
 // use e
 
 #[derive(Debug, PartialEq, Clone)]
@@ -59,7 +59,7 @@ impl Fahrkabine {
     }
 
     pub(crate) fn add_passenger(kabine: &Arc<RwLock<Fahrkabine>>, passenger_id: i32) {
-        println!(
+        info!(
             "Adding passenger {} to kabine {}",
             passenger_id,
             kabine.read().unwrap().id
@@ -69,7 +69,7 @@ impl Fahrkabine {
     }
 
     pub(crate) fn remove_passenger(kabine: &Arc<RwLock<Fahrkabine>>, passenger_id: i32) {
-        println!(
+        info!(
             "Removing passenger {} to kabine {}",
             passenger_id,
             kabine.read().unwrap().id

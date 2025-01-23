@@ -1,6 +1,7 @@
 use elevator::*;
 
 fn main() {
+    env_logger::init();
     // Define constants for the simulation
     const NUM_ELEVATORS: usize = 3;
     const NUM_FLOORS: i32 = 3;
