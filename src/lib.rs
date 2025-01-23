@@ -36,8 +36,6 @@ pub fn init_simulation(
         etagen,
     )));
 
-    info!("Main loop");
-
     // init current floors if not passed as parameter
     let current_floors = current_floors.unwrap_or_else(|| {
         info!("no current floors set, randomizing");
@@ -84,16 +82,15 @@ pub fn init_simulation(
         controller.write().unwrap().all_passengers.push(p);
     }
 
-    info!("Created all Passengers!");
-    info!("State before");
-    debug_passenger_states(&controller);
-
     controller
 }
 
 pub fn run_simulation(
     controller: Arc<RwLock<Controller>>,
 ) {
+    info!("State before");
+    debug_passenger_states(&controller);
+
     // Wait for all passengers to exit
     while controller.read().unwrap().all_passengers.iter().any(|p| {
         let p = p.read().unwrap();
