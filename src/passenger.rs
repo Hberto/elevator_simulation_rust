@@ -1,146 +1,154 @@
 use std::sync::{Arc, RwLock};
-use std::thread;
-use std::time::Duration;
-use crate::cabin::Fahrkabine;
-use crate::controller::Controller;
 use log::info;
+use rand::Rng;
+use super::controller::Controller;
+use super::DoorState;
+//mod cabin;
+//pub use cabin::DoorState;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
+pub enum Direction {
+    Up,
+    Down,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum PassengerState {
-    WaitingOnFloor(i32),
-    EnteringElevator,
-    ChoosingLevel,
-    InElevator,
+    Waiting,
+    Boarding,
+    Riding,
     Exiting,
 }
 
-#[derive(Debug)]
 pub struct Passagier {
-    pub(crate) id: i32,
-    etage: i32,
-    dest_etage: i32,
-    pub(crate) state: PassengerState,
+    pub id: i32,
+    pub current_floor: i32,
+    pub target_floor: i32,
+    pub direction: Direction,
+    pub state: PassengerState,
+    pub controller: Arc<RwLock<Controller>>,
 }
 
 impl Passagier {
-    pub(crate) fn new(
+    pub fn new(
         id: i32,
-        etage: i32,
-        dest_etage: i32,
-        fahrkabinen: Vec<Arc<RwLock<Fahrkabine>>>,
+        current_floor: i32,
+        target_floor: i32,
         controller: Arc<RwLock<Controller>>,
-    ) -> Arc<RwLock<Passagier>> {
-        let p = Passagier {
-            id: id,
-            etage: etage,
-            dest_etage: dest_etage,
-            state: PassengerState::WaitingOnFloor(etage),
+    ) -> Arc<RwLock<Self>> {
+        let direction = if target_floor > current_floor {
+            Direction::Up
+        } else {
+            Direction::Down
         };
-
-        let l = Arc::new(RwLock::new(p));
-        let f = l.clone();
-        thread::spawn(move || Passagier::lifecycle(l, fahrkabinen, controller));
-        f
+        
+        Arc::new(RwLock::new(Self {
+            id,
+            current_floor,
+            target_floor,
+            direction,
+            state: PassengerState::Waiting,
+            controller,
+        }))
     }
 
-    pub fn get_state(passagier: &Arc<RwLock<Passagier>>) -> (i32, i32, i32, PassengerState) {
-        let passagier = passagier.read().unwrap();
-        (passagier.id, passagier.etage, passagier.dest_etage, passagier.state.clone())
+    pub fn create_passengers(
+        num: usize,
+        num_floors: i32,
+        current_floors: Option<Vec<i32>>,
+        target_floors: Option<Vec<i32>>,
+        controller: Arc<RwLock<Controller>>,
+    ) -> Vec<Arc<RwLock<Self>>> {
+        let mut rng = rand::rng();
+        
+        (0..num)
+            .map(|i| {
+                let current = current_floors.as_ref().map_or_else(
+                    || rng.random_range(0..num_floors),
+                    |v| v[i % v.len()],
+                );
+                
+                let mut target = target_floors.as_ref().map_or_else(
+                    || rng.random_range(0..num_floors),
+                    |v| v[i % v.len()],
+                );
+                
+                while target == current {
+                    target = rng.random_range(0..num_floors);
+                }
+                
+                Self::new(i as i32, current, target, controller.clone())
+            })
+            .collect()
     }
 
-    fn lifecycle(passagier: Arc<RwLock<Passagier>>, fahrkabinen: Vec<Arc<RwLock<Fahrkabine>>>, controller: Arc<RwLock<Controller>>) {
-        'outer_loop: loop {
-            Passagier::press_up_or_down_button(&passagier, &controller);
-            let arrived_elevator = Passagier::wait_for_elevator(&passagier, &fahrkabinen);
-            Passagier::enter_elevator(&passagier, &arrived_elevator);
-            'inner_loop: loop {
+    pub fn update(&mut self) {
+        match self.state {
+        PassengerState::Waiting => {
+            self.request_elevator();
+            self.check_for_available_elevator(); // Add this line
+        },
+        PassengerState::Boarding => self.board_elevator(),
+        PassengerState::Riding => self.check_arrival(),
+        PassengerState::Exiting => (),
+    }
+}
 
-                if arrived_elevator.read().unwrap().passengers.len()
-                    > arrived_elevator.read().unwrap().max_passengers
-                {
-                    info!("Elevator is full");
-                    if rand::random::<i32>().abs() % 10 == 0 {
-                        info!("Passenger {} will Exit and wait for the next!", passagier.read().unwrap().id);
-                        Passagier::exit_elevator(&passagier, &arrived_elevator);
-                        thread::sleep(Duration::from_secs(5)); //TODO if we dont wait this will end in a deadlock
-                        continue 'outer_loop;
-                    }
-                    else{
-                        info!("Passenger {} will hope for another passenger to leave!", passagier.read().unwrap().id);
-                        thread::sleep(Duration::from_micros(rand::random::<u64>() % 200));
+    fn check_for_available_elevator(&mut self) {
+    if let Some(_elevator) = self.controller.read().unwrap().get_available_elevator(
+        self.current_floor,
+        &self.direction,
+    ) {
+        self.state = PassengerState::Boarding;
+    }
+    }
 
-                    }
-                }
-                else {
-                    break 'inner_loop;
-                }
+    fn request_elevator(&mut self) {
+    info!("Passenger {} requesting elevator on floor {}", self.id, self.current_floor);
+    // Add the floor request to the controller
+    self.controller
+        .write()
+        .unwrap()
+        .add_floor_request(self.current_floor, self.direction.clone());
 
-            }
-            Passagier::press_level_button(&passagier, &arrived_elevator);
-            Passagier::wait_for_exit(&passagier, &arrived_elevator);
-            Passagier::exit_elevator(&passagier, &arrived_elevator);
-            break;
+    // Check if there's an available elevator now
+    if let Some(_elevator) = self.controller.read().unwrap().get_available_elevator(
+        self.current_floor,
+        &self.direction,
+    ) {
+        // Transition to Boarding if an elevator is available
+        self.state = PassengerState::Boarding;
         }
     }
-    fn press_up_or_down_button(passagier: &Arc<RwLock<Passagier>>, controller: &Arc<RwLock<Controller>>) {
-        let mut passagier = passagier.write().unwrap();
-        passagier.state = PassengerState::WaitingOnFloor(passagier.etage);
-        info!("Passenger {} is pressing up or down button", passagier.id);
-        controller.read().unwrap().send_floor_request(passagier.etage, 1);
-    }
-    fn press_level_button(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
-        let mut passagier = passagier.write().unwrap();
-        passagier.state = PassengerState::ChoosingLevel;
-        info!("Passenger {} is pressing level button", passagier.id);
 
-        kabine
-            .read()
-            .unwrap()
-            .press_level_button(passagier.dest_etage);
-    }
-    fn wait_for_elevator(
-        passagier: &Arc<RwLock<Passagier>>,
-        fahrkabinen: &Vec<Arc<RwLock<Fahrkabine>>>,
-    ) -> Arc<RwLock<Fahrkabine>> {
-        //TODO switch to changevar
-        let passagier = passagier.write().unwrap();
-
-        info!(
-            "Passenger {} is waiting for elevator in floor {}",
-            passagier.id, passagier.etage
-        );
-        loop {
-            for kabine_lock in fahrkabinen.iter() {
-                let kabine = kabine_lock.read().unwrap();
-                if kabine.etage == passagier.etage && kabine.door.is_open() {
-                    return kabine_lock.clone();
-                }
-            }
+    fn board_elevator(&mut self) {
+        info!("Passenger {} attempting to board elevator...", self.id);
+        if let Some(elevator) = self.controller.read().unwrap().get_available_elevator(
+            self.current_floor,
+            &self.direction,
+        ) { 
+            let mut elevator = elevator.write().unwrap();
+            elevator.passengers.push(self.id);
+            info!("Passenger {} boarding elevator {}", self.id, elevator.id);
+            self.state = PassengerState::Riding;
+            elevator.add_target_floor(self.target_floor);
         }
     }
-    fn enter_elevator(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
-        let mut passagier = passagier.write().unwrap();
-        Fahrkabine::add_passenger(kabine, passagier.id);
-        passagier.state = PassengerState::EnteringElevator;
-        println!("Passenger {} is entering elevator", passagier.id);
-    }
-    fn wait_for_exit(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
-        let mut passagier = passagier.write().unwrap();
 
-        passagier.state = PassengerState::InElevator;
-        println!("Passenger {} is waiting for exit", passagier.id);
-        //TODO switch to changevar
-        loop {
-            let kabine = kabine.read().unwrap();
-            if kabine.etage == passagier.dest_etage && kabine.door.is_open() {
-                break;
-            }
+    fn check_arrival(&mut self) {
+    info!("Passenger {} checking arrival...", self.id);
+    let controller = self.controller.read().unwrap();
+    if let Some(elevator) = controller.get_elevator_with_passenger(self.id) {
+        let elevator_guard = elevator.read().unwrap();
+        let elevator_floor = elevator_guard.current_floor;
+        let door_open = elevator_guard.door.state == DoorState::Open;
+        drop(elevator_guard); // Release the lock early
+
+        if elevator_floor == self.target_floor && door_open {
+            self.state = PassengerState::Exiting;
+            info!("Passenger {} exiting elevator {}", self.id, elevator.read().unwrap().id);
+            elevator.write().unwrap().passengers.retain(|&id| id != self.id);
         }
     }
-    fn exit_elevator(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
-        let mut passagier = passagier.write().unwrap();
-        Fahrkabine::remove_passenger(kabine, passagier.id);
-        passagier.state = PassengerState::Exiting;
-        println!("Passenger {} is exiting elevator", passagier.id);
-    }
+}
 }
