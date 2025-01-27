@@ -98,37 +98,36 @@ impl Passagier {
             .unwrap()
             .press_level_button(passagier.dest_etage);
     }
-    fn wait_for_elevator(
-        passagier: &Arc<RwLock<Passagier>>,
-        fahrkabinen: &Vec<Arc<RwLock<Fahrkabine>>>,
-    ) -> Arc<RwLock<Fahrkabine>> {
-        //TODO switch to changevar
-        let passagier = passagier.write().unwrap();
+    // passenger.rs
+fn wait_for_elevator(
+    passagier: &Arc<RwLock<Passagier>>,
+    fahrkabinen: &Vec<Arc<RwLock<Fahrkabine>>>,
+) -> Arc<RwLock<Fahrkabine>> {
+    let passagier_guard = passagier.read().unwrap();
+    let current_floor = passagier_guard.etage;
+    drop(passagier_guard);
 
-        info!(
-            "Passenger {} is waiting for elevator in floor {}",
-            passagier.id, passagier.etage
-        );
-        loop {
-            for kabine_lock in fahrkabinen.iter() {
-                let kabine = kabine_lock.read().unwrap();
-                if kabine.etage == passagier.etage && kabine.door.is_open() {
-                    return kabine_lock.clone();
-                }
+    loop {
+        for kabine_lock in fahrkabinen {
+            let kabine = kabine_lock.read().unwrap();
+            if kabine.etage == current_floor && kabine.door.is_open() {
+                return kabine_lock.clone();
             }
         }
+        std::thread::sleep(Duration::from_millis(100));
     }
+}
     fn enter_elevator(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
         let mut passagier = passagier.write().unwrap();
         Fahrkabine::add_passenger(kabine, passagier.id);
         passagier.state = PassengerState::EnteringElevator;
-        println!("Passenger {} is entering elevator", passagier.id);
+        info!("Passenger {} is entering elevator", passagier.id);
     }
     fn wait_for_exit(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
         let mut passagier = passagier.write().unwrap();
 
         passagier.state = PassengerState::InElevator;
-        println!("Passenger {} is waiting for exit", passagier.id);
+        info!("Passenger {} is waiting for exit", passagier.id);
         //TODO switch to changevar
         loop {
             let kabine = kabine.read().unwrap();
@@ -141,6 +140,6 @@ impl Passagier {
         let mut passagier = passagier.write().unwrap();
         Fahrkabine::remove_passenger(kabine, passagier.id);
         passagier.state = PassengerState::Exiting;
-        println!("Passenger {} is exiting elevator", passagier.id);
+        info!("Passenger {} is exiting elevator", passagier.id);
     }
 }

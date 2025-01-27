@@ -96,6 +96,8 @@ impl Controller {
         //TODO inteligent selection of kabine
         let random_kabine = 1;
         self.fahrkabinen[random_kabine as usize].send(etage);
+        //let kabine_index = 0; // For single elevator system
+        //self.fahrkabinen[kabine_index].send(etage).unwrap();
     }
 
     pub(crate) fn new(fahrkabinen: Vec<Arc<RwLock<Fahrkabine>>>, etagen: Vec<Etage>) -> Controller {
