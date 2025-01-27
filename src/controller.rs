@@ -2,8 +2,7 @@ use std::sync::{Arc, RwLock};
 use std::sync::mpsc::channel;
 use std::thread;
 use crate::cabin::{DoorState, Etage, Fahrkabine};
-//use crate::logger::{Logger};
-use log::{info};
+use log::info;
 use crate::passenger::{Passagier, PassengerState};
 
 
