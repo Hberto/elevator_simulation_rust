@@ -52,6 +52,13 @@ impl Fahrkabine {
         return;
     }
     
+    self.close_door();
+    if self.door.state != DoorState::Closed {
+        panic!("Elevator {} attempted to move with open doors!", self.id);
+    } 
+
+    //assert_eq!(self.door.state, DoorState::Closed, "Elevator {} attempted to move with open doors!", self.id);
+    
     self.state = ElevatorState::Moving;
     info!("Elevator {} moving from {} to {}", self.id, self.current_floor, target_floor);
     

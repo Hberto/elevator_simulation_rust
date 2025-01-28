@@ -44,8 +44,11 @@ pub fn request_elevator(&mut self) {
     let current = self.current_floor;
     let destination = self.destination_floor;
     
+    // Use here differernt approaches: random or round robin
     thread::spawn(move || {
-        controller.write().unwrap().send_floor_request(current, destination);
+        //controller.write().unwrap().send_floor_request(current, destination);
+        //controller.write().unwrap().send_random_floor_request(current, destination);
+        controller.write().unwrap().send_rr_floor_request(current, destination);
     });
 }
 
