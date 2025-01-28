@@ -1,31 +1,41 @@
 use elevator::*;
-use log::info;
+use std::sync::RwLock;
+use std::sync::Arc;
+use log::{info,warn};
+use std::time::{Duration, Instant};
 
 fn main() {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    // Define constants for the simulation
-    const NUM_ELEVATORS: usize = 3;
-    const NUM_FLOORS: i32 = 3;
-    const NUM_PASSENGERS: usize = 2;
-
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
+    const TIMEOUT: Duration = Duration::from_secs(5);
+    let start_time = Instant::now();
+    const NUM_ELEVATORS: usize = 1;
+    const NUM_FLOORS: i32 = 2;
+    const NUM_PASSENGERS: usize = 1;
     const MAX_PASSENGERS_PER_CABIN: usize = 2;
 
-    // Run the simulation with the defined constants
-    //run_simulation(NUM_ELEVATORS, NUM_FLOORS, NUM_PASSENGERS, MAX_PASSENGERS_PER_CABIN, Option::from(vec![0, 1]), Option::from(vec![1, 0]));
-     info!(
-        "Starting simulation: {} elevator, {} floors, {} passenger",
-        NUM_ELEVATORS, NUM_FLOORS, NUM_PASSENGERS
-    );
-    run_simulation(
-        NUM_ELEVATORS,   // num_elevators
-        NUM_FLOORS,   // num_floors (0-3)
-        NUM_PASSENGERS,  // num_passengers
-        MAX_PASSENGERS_PER_CABIN,   // max_passengers_per_cabin
-        None, // current_floors
-        None, // destination_floors
-    );
+    let elevators: Vec<_> = (0..NUM_ELEVATORS)
+        .map(|i| Fahrkabine::new(i as i32, 0, MAX_PASSENGERS_PER_CABIN))
+        .collect();
 
-    // Keep main thread alive to allow simulation to run
-    std::thread::sleep(std::time::Duration::from_secs(100));
-    // run_simulation(NUM_ELEVATORS, NUM_FLOORS, NUM_PASSENGERS, None, None);
+    let controller = Controller::new(elevators.clone());
+
+    // Create passengers
+    for i in 0..NUM_PASSENGERS {
+        let passenger = Passagier::new(i as i32, 0, 1, controller.clone());
+        passenger.write().unwrap().request_elevator();
+        controller.write().unwrap().add_passenger(passenger);
+    }
+
+    // Simulation loop
+    loop {
+        let all_exited = controller.read().unwrap().passengers.iter().all(|p| {
+            p.read().unwrap().state == PassengerState::Exiting
+        });
+        if all_exited {
+            break;
+        }
+        // Add small sleep to prevent tight loop
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    info!("Simulation complete.");
 }
