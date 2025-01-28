@@ -10,7 +10,7 @@ use crate::passenger::{Passagier, PassengerState};
 pub struct Controller {
     fahrkabinen: Vec<Arc<std::sync::mpsc::Sender<i32>>>, //TODO sender either in controller or in kabine not in both
     etagen: Vec<Etage>,
-    pub(crate) all_passengers: Vec<Arc<RwLock<Passagier>>>,
+    pub all_passengers: Vec<Arc<RwLock<Passagier>>>, // TODO this should not be public!! add a proper getter function please
 }
 
 impl Controller {
@@ -35,6 +35,7 @@ impl Controller {
         );
     }
 
+    // TODO proper state getter functions would be nice
     /* fn get_fahrkabinen_states(&self) -> Vec<(i32, i32, DoorState, Vec<i32>)> {
         self.fahrkabinen.iter().map(|kabine| {
             let kabine = kabine.read().umwrap();
@@ -49,6 +50,7 @@ impl Controller {
             (passagier.id, passagier.state.clone())
         }).collect()
     }
+
     fn move_to(kabine: &Arc<RwLock<Fahrkabine>>, etage: i32) {
         let mut kabine = kabine.write().unwrap();
         info!("Fahrkabine {} moving to etage {}", kabine.id, etage);
@@ -95,7 +97,7 @@ impl Controller {
         println!();
         info!("Controller is sending request to Fahrkabine");
         //TODO inteligent selection of kabine
-        let random_kabine = 1;
+        let random_kabine = 0; // selection fix
         self.fahrkabinen[random_kabine as usize].send(etage);
     }
 
