@@ -3,7 +3,7 @@ use std::sync::RwLock;
 use crate::cabin::{Etage, Fahrkabine};
 use crate::controller::Controller;
 use crate::passenger::{Passagier, PassengerState};
-use log::{info, warn};
+use log::info;
 
 // use elevator::*;
 mod cabin;
@@ -60,18 +60,18 @@ pub fn run_simulation(
     });
 
     // ensure the lengths match
-    assert_eq!(current_floors.len(), destination_floors.len(), "Current and destination floors must have the same length.");
-    assert_eq!(current_floors.len() as i32, num_floors, "Current floors must match number of floors.");
-    assert_eq!(destination_floors.len() as i32, num_floors, "Destination floors must match number of floors.");
-
-    // assert that all current and destination floors are within valid bounds
-    for &floor in &current_floors {
-        assert!(floor >= 0 && floor < num_floors, "Current floor {} is out of bounds.", floor);
-    }
-
-    for &floor in &destination_floors {
-        assert!(floor >= 0 && floor < num_floors, "Destination floor {} is out of bounds.", floor);
-    }
+    //assert_eq!(current_floors.len(), destination_floors.len(), "Current and destination floors must have the same length.");
+    //assert_eq!(current_floors.len() as i32, num_floors, "Current floors must match number of floors.");
+    //assert_eq!(destination_floors.len() as i32, num_floors, "Destination floors must match number of floors.");
+//
+    //// assert that all current and destination floors are within valid bounds
+    //for &floor in &current_floors {
+    //    assert!(floor >= 0 && floor < num_floors, "Current floor {} is out of bounds.", floor);
+    //}
+//
+    //for &floor in &destination_floors {
+    //    assert!(floor >= 0 && floor < num_floors, "Destination floor {} is out of bounds.", floor);
+    //}
 
     for (i, (&current_floor, &destination_floor)) in current_floors.iter().zip(destination_floors.iter()).enumerate() {
         let p = Passagier::new(

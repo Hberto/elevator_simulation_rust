@@ -3,8 +3,9 @@ use std::sync::mpsc::channel;
 use std::thread;
 use crate::cabin::{DoorState, Etage, Fahrkabine};
 //use crate::logger::{Logger};
-use log::{info};
+use log::info;
 use crate::passenger::{Passagier, PassengerState};
+use rand::Rng;
 
 
 pub struct Controller {
@@ -42,13 +43,6 @@ impl Controller {
         }).collect()
     } */
 
-    // Method to get the states of all Passagiere
-    pub fn get_passenger_states(&self) -> Vec<(i32, PassengerState)> {
-        self.all_passengers.iter().map(|p| {
-            let passagier = p.read().unwrap();
-            (passagier.id, passagier.state.clone())
-        }).collect()
-    }
     fn move_to(kabine: &Arc<RwLock<Fahrkabine>>, etage: i32) {
         let mut kabine = kabine.write().unwrap();
         info!("Fahrkabine {} moving to etage {}", kabine.id, etage);
@@ -90,14 +84,31 @@ impl Controller {
             }
         }
     }
-
-    pub(crate) fn send_floor_request(&self, etage: i32, direction: i32) {
-        println!();
-        info!("Controller is sending request to Fahrkabine");
-        //TODO inteligent selection of kabine
-        let random_kabine = 1;
-        self.fahrkabinen[random_kabine as usize].send(etage);
+    
+    pub fn get_elevator_ids(&self) -> Vec<i32> {
+        self.fahrkabinen.iter().enumerate().map(|(i, _)| i as i32).collect()
     }
+
+    pub(crate) fn send_random_floor_request(&self, etage: i32, direction: i32) {
+        info!("Controller is sending request to Fahrkabine");
+        let elevator_ids = self.get_elevator_ids();
+        let random_index = rand::rng().random_range(0..elevator_ids.len());
+        info!(
+        "Selected Fahrkabine {} for the request to floor {}",
+        random_index,
+        etage
+        );
+        let _ = self.fahrkabinen[random_index as usize].send(etage);
+    }
+
+
+    //pub(crate) fn send_floor_request(&self, etage: i32, direction: i32) {
+    //    println!();
+    //    info!("Controller is sending request to Fahrkabine");
+    //    //TODO inteligent selection of kabine
+    //    let random_kabine = 0;
+    //    self.fahrkabinen[random_kabine as usize].send(etage);
+    //}
 
     pub(crate) fn new(fahrkabinen: Vec<Arc<RwLock<Fahrkabine>>>, etagen: Vec<Etage>) -> Controller {
         let mut kabinen_senders = vec![];

@@ -49,13 +49,8 @@ impl Fahrkabine {
         }))
     }
 
-    pub  fn get_state(kabine: &Arc<RwLock<Fahrkabine>>) -> (i32, i32, DoorState, Vec<i32>) {
-        let kabine = kabine.read().unwrap();
-        (kabine.id, kabine.etage, kabine.door.state.clone(), kabine.passengers.clone())
-    }
-
     pub(crate) fn press_level_button(&self, etage: i32) {
-        self.level_sender.as_ref().unwrap().send(etage);
+       let _ =  self.level_sender.as_ref().unwrap().send(etage);
     }
 
     pub(crate) fn add_passenger(kabine: &Arc<RwLock<Fahrkabine>>, passenger_id: i32) {

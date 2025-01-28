@@ -43,11 +43,6 @@ impl Passagier {
         f
     }
 
-    pub fn get_state(passagier: &Arc<RwLock<Passagier>>) -> (i32, i32, i32, PassengerState) {
-        let passagier = passagier.read().unwrap();
-        (passagier.id, passagier.etage, passagier.dest_etage, passagier.state.clone())
-    }
-
     fn lifecycle(passagier: Arc<RwLock<Passagier>>, fahrkabinen: Vec<Arc<RwLock<Fahrkabine>>>, controller: Arc<RwLock<Controller>>) {
         'outer_loop: loop {
             Passagier::press_up_or_down_button(&passagier, &controller);
@@ -86,7 +81,12 @@ impl Passagier {
         let mut passagier = passagier.write().unwrap();
         passagier.state = PassengerState::WaitingOnFloor(passagier.etage);
         info!("Passenger {} is pressing up or down button", passagier.id);
-        controller.read().unwrap().send_floor_request(passagier.etage, 1);
+        //controller.read().unwrap().send_floor_request(passagier.etage, 1);
+
+        controller.read().unwrap().send_random_floor_request(passagier.etage, 1);
+
+
+        //controller.read().unwrap().send_floor_request(passagier.etage, 1);
     }
     fn press_level_button(passagier: &Arc<RwLock<Passagier>>, kabine: &Arc<RwLock<Fahrkabine>>) {
         let mut passagier = passagier.write().unwrap();
