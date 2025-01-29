@@ -84,7 +84,7 @@ impl Controller {
             }
         }
     }
-    
+
     pub fn get_elevator_ids(&self) -> Vec<i32> {
         self.fahrkabinen.iter().enumerate().map(|(i, _)| i as i32).collect()
     }
@@ -92,7 +92,11 @@ impl Controller {
     pub(crate) fn send_random_floor_request(&self, etage: i32, direction: i32) {
         info!("Controller is sending request to Fahrkabine");
         let elevator_ids = self.get_elevator_ids();
-        let random_index = rand::rng().random_range(0..elevator_ids.len());
+        let random_index = rand::rng().random_range(0..elevator_ids.len() - 1 );
+        if etage < 0  || etage >= self.etagen.len() as i32 {
+            info!("Selected Fahrkabine {} received invalid floor request {}", random_index, etage);
+            return;
+        }
         info!(
         "Selected Fahrkabine {} for the request to floor {}",
         random_index,
